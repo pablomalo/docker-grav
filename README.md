@@ -1,4 +1,6 @@
-# Official Docker Image for Grav
+# Docker Image for Grav
+
+> Forked from https://github.com/getgrav/docker-grav
 
 This currently is pretty minimal and uses:
 

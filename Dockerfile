@@ -1,5 +1,9 @@
-FROM php:7.2-apache
-LABEL maintainer="Andy Miller <rhuk@getgrav.org> (@rhukster)"
+FROM php:apache
+LABEL maintainer="Paul Gouin <paul@pablomalo.fr>"
+
+# Define Grav version and expected SHA1 signature
+ARG GRAV_VERSION=1.6.19
+ARG GRAV_SHA1=231e6789e9575adccd6044aa0d0c72b8c2603a96
 
 # Enable Apache Rewrite + Expires Module
 RUN a2enmod rewrite expires
@@ -11,10 +15,14 @@ RUN apt-get update && apt-get install -y \
         libjpeg62-turbo-dev \
         libpng-dev \
         libyaml-dev \
+        libzip-dev \
+        libicu-dev \
     && docker-php-ext-install opcache \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install zip
+    && docker-php-ext-install zip \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install intl
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
@@ -29,31 +37,28 @@ RUN { \
 		echo 'post_max_size=128M'; \
 	} > /usr/local/etc/php/conf.d/php-recommended.ini
 
- # provide container inside image for data persistance
+# provide container inside image for data persistance
 # VOLUME /var/www/html
 
 RUN pecl install apcu \
     && pecl install yaml \
     && docker-php-ext-enable apcu yaml
 
-# Set user to www-data
-RUN chown www-data:www-data /var/www
-USER www-data
-
-# Define Grav version and expected SHA1 signature
-ENV GRAV_VERSION 1.5.5
-ENV GRAV_SHA1 af0433facdae1afeb1d973a66db2315c5022b10d
-
 # Install grav
 WORKDIR /var/www
 RUN curl -o grav-admin.zip -SL https://getgrav.org/download/core/grav-admin/${GRAV_VERSION} && \
-    echo "$GRAV_SHA1 grav-admin.zip" | sha1sum -c - && \
+    echo ${GRAV_SHA1} grav-admin.zip | sha1sum -c - && \
     unzip grav-admin.zip && \
     mv -T /var/www/grav-admin /var/www/html && \
     rm grav-admin.zip
 
-# Return to root user
-USER root
+# Change uid of user www-data and gid of goup www-data,
+# to match desired uid and gid on the host.
+RUN usermod --non-unique --uid 1001 www-data \
+    && groupmod --non-unique --gid 1001 www-data
+
+# Set user to www-data
+RUN chown -R www-data:www-data /var/www
 
 # Copy init scripts
 # COPY docker-entrypoint.sh /entrypoint.sh
