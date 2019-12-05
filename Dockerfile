@@ -1,14 +1,14 @@
 FROM php:apache
 LABEL maintainer="Paul Gouin <paul@pablomalo.fr>"
 
-# Define Grav version and expected SHA1 signature
+# Define Grav version and expected SHA1 signature.
 ARG GRAV_VERSION=1.6.19
 ARG GRAV_SHA1=231e6789e9575adccd6044aa0d0c72b8c2603a96
 
-# Enable Apache Rewrite + Expires Module
+# Enable Apache Rewrite + Expires Module.
 RUN a2enmod rewrite expires
 
-# Install dependencies
+# Install dependencies.
 RUN apt-get update && apt-get install -y \
         unzip \
         libfreetype6-dev \
@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure intl \
     && docker-php-ext-install intl
 
-# set recommended PHP.ini settings
-# see https://secure.php.net/manual/en/opcache.installation.php
+# Set recommended PHP.ini settings.
+# See https://secure.php.net/manual/en/opcache.installation.php
 RUN { \
 		echo 'opcache.memory_consumption=128'; \
 		echo 'opcache.interned_strings_buffer=8'; \
@@ -37,14 +37,14 @@ RUN { \
 		echo 'post_max_size=128M'; \
 	} > /usr/local/etc/php/conf.d/php-recommended.ini
 
-# provide container inside image for data persistance
+# Provide container inside image for data persistance
 # VOLUME /var/www/html
 
 RUN pecl install apcu \
     && pecl install yaml \
     && docker-php-ext-enable apcu yaml
 
-# Install grav
+# Install Grav.
 WORKDIR /var/www
 RUN curl -o grav-admin.zip -SL https://getgrav.org/download/core/grav-admin/${GRAV_VERSION} && \
     echo ${GRAV_SHA1} grav-admin.zip | sha1sum -c - && \
